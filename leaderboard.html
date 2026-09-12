@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Safety Response 2026 — Top 3</title>
+<style>
+:root{--bg:#070809;--panel:#15191c;--line:#343a3f;--gold:#d5ad55;--gold2:#f1cb6a;--text:#f4f4f4;--muted:#92999f}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 0,#25201a 0,#0a0b0c 48%,#050506 100%);color:var(--text);font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;padding:28px}
+.wrap{width:min(900px,100%);text-align:center}
+.brand{font-size:13px;letter-spacing:3px;color:var(--gold);font-weight:800}
+h1{font-size:clamp(36px,7vw,68px);margin:8px 0 4px;font-weight:900;letter-spacing:-2px}
+h1 span{color:var(--gold2)}
+.subtitle{color:var(--muted);font-size:15px;margin-bottom:34px}
+.card{background:linear-gradient(145deg,#191d20,#101315);border:1px solid #3b4145;border-radius:24px;padding:28px;box-shadow:0 25px 70px #0008}
+.live{display:inline-flex;align-items:center;gap:8px;border:1px solid #5b4b2d;border-radius:999px;padding:8px 14px;color:var(--gold2);font-size:12px;font-weight:800;letter-spacing:1px;margin-bottom:24px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--gold2);box-shadow:0 0 12px var(--gold2)}
+.rows{display:grid;gap:12px}
+.row{display:grid;grid-template-columns:90px 1fr 150px 150px;align-items:center;gap:14px;background:#0c0f11;border:1px solid #2b3034;border-radius:16px;padding:18px 20px;text-align:left}
+.rank{font-size:30px;font-weight:900;text-align:center;color:var(--gold2)}
+.name{font-size:22px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.value{text-align:center}
+.value strong{display:block;font-size:25px}
+.value small{color:var(--muted);font-size:10px;letter-spacing:1px}
+.empty{padding:55px 20px;color:var(--muted)}
+.updated{margin-top:18px;color:var(--muted);font-size:11px}
+@media(max-width:650px){
+body{padding:14px}.card{padding:18px;border-radius:18px}.row{grid-template-columns:52px 1fr 80px;padding:15px 10px}.row .time{display:none}.rank{font-size:25px}.name{font-size:17px}.value strong{font-size:21px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">SAFETY FORWARD 2026</div>
+  <h1>SAFETY <span>RESPONSE</span></h1>
+  <div class="subtitle">Western Region Manufacturing · LIVE TOP 3</div>
+  <div class="card">
+    <div class="live"><span class="dot"></span> LIVE LEADERBOARD</div>
+    <div id="rows" class="rows"><div class="empty">Waiting for results...</div></div>
+    <div id="updated" class="updated"></div>
+  </div>
+</div>
+<script>
+const API_URL = "PASTE_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+}
+function formatTime(sec){
+  sec=Number(sec)||0;
+  const m=Math.floor(sec/60), s=sec%60;
+  return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+}
+async function load(){
+  const box=document.getElementById("rows");
+  if(API_URL.includes("PASTE_")){
+    box.innerHTML='<div class="empty">Connect the Google Apps Script URL to show the live leaderboard.</div>';
+    return;
+  }
+  try{
+    const r=await fetch(API_URL,{cache:"no-store"});
+    const data=await r.json();
+    const rows=(data.rows||[]).map(x=>({
+      name:x[1]??x.name??"",
+      score:Number(x[2]??x.score??0),
+      time:Number(x[3]??x.time??0)
+    })).filter(x=>x.name);
+    rows.sort((a,b)=>b.score-a.score || a.time-b.time);
+    const top=rows.slice(0,3);
+    if(!top.length){
+      box.innerHTML='<div class="empty">No completed attempts yet.</div>';
+      document.getElementById("updated").textContent="";
+      return;
+    }
+    const medals=["🥇","🥈","🥉"];
+    box.innerHTML=top.map((x,i)=>`
+      <div class="row">
+        <div class="rank">${medals[i]}</div>
+        <div class="name">${escapeHtml(x.name)}</div>
+        <div class="value"><strong>${x.score}</strong><small>POINTS</small></div>
+        <div class="value time"><strong>${formatTime(x.time)}</strong><small>TIME</small></div>
+      </div>`).join("");
+    document.getElementById("updated").textContent="Last updated: "+new Date().toLocaleTimeString();
+  }catch(e){
+    box.innerHTML='<div class="empty">Leaderboard temporarily unavailable.</div>';
+  }
+}
+load();
+setInterval(load,10000);
+</script>
+</body>
+</html>
